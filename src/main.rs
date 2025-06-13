@@ -13,6 +13,9 @@ fn main() {
     let cli = Cli::parse();
     for p in cli.path {
         let p = Path::new(&p);
+        if p.is_dir() {
+            continue;
+        }
         let o_dir = p.parent().unwrap().join("out");
         let o = o_dir.join(p.file_name().unwrap());
         if let Result::Ok(false) = fs::exists(&o_dir) {
@@ -32,16 +35,19 @@ fn process(i: &Path, o: &Path) {
     let (wb, hb) = background.dimensions();
     let (wf, hf) = foreground.dimensions();
 
-    let (fore_x1, fore_y1, fore_x2, fore_y2) = if wb > hb {
-        (wb / 2 - wf / 2, 0, wb / 2 + wf / 2, 1080)
-    } else {
+    let (fore_x1, fore_y1, fore_x2, fore_y2) = if wf > hf {
         (0, hb / 2 - hf / 2, 1080, hb / 2 + hf / 2)
+    } else {
+        (wb / 2 - wf / 2, 0, wb / 2 + wf / 2, 1080)
     };
 
     let mut result = RgbImage::new(1080, 1080);
 
     for (x, y, pixel) in result.enumerate_pixels_mut() {
         if fore_x1 <= x && x < fore_x2 && fore_y1 <= y && y < fore_y2 {
+            // if x - fore_x1 >= wf || y - fore_y1 >= hf {
+            //     continue;
+            // }
             *pixel = foreground.get_pixel(x - fore_x1, y - fore_y1).to_rgb();
         } else {
             let data = background.get_pixel(x, y);
